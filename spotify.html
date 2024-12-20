@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify 曲ランキング</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      color: #1DB954;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+    .rank {
+      font-weight: bold;
+      color: #1DB954;
+      margin-right: 15px;
+    }
+    .track-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .track-image {
+      margin-right: 15px;
+    }
+    .track-image img {
+      border-radius: 8px;
+      width: 60px;
+      height: 60px;
+    }
+    audio {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Spotify 人気曲ランキング</h1>
+  <ul id="rankingList"></ul>
+
+  <script>
+    // 手動で取得したアクセストークンを設定
+    const CLIENT_ID ='9ed33837bdb04174862a91cfb5f4e188';
+    const CLIENT_SECRET ='032dd1fd79614dbc9f29aef1b72048ca';
+
+    // Spotify APIのエンドポイント
+    const API_URL = 'https://api.spotify.com/v1/';
+
+    // AjaxリクエストでSpotify APIにデータをリクエストする関数
+    async function fetchTopTracks() {
+      const response = await fetch(`${API_URL}me/top/artists`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${ACCESS_TOKEN}`
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Spotify APIからデータを取得できませんでした');
+        return [];
+      }
+
+      const data = await response.json();
+      return data.items; // 取得したアーティスト情報を返す
+    }
+
+    // ランキング表示の関数
+    async function createTrackRanking() {
+      const topTracks = await fetchTopTracks();
+
+      // 曲データをランキング形式に整形
+      const ranking = topTracks.map((track, index) => ({
+        rank: index + 1,
+        name: track.name,
+        artist: track.artists[0].name,
+        popularity: track.popularity,
+        preview_url: track.preview_url,
+        image_url: track.album.images[0].url  // ジャケット画像のURL
+      }));
+
+      // 人気順に並び替え
+      ranking.sort((a, b) => b.popularity - a.popularity);
+
+      // ランキングを表示
+      displayRanking(ranking);
+    }
+
+    // ランキングをHTMLに表示する関数
+    function displayRanking(ranking) {
+      const rankingList = document.getElementById('rankingList');
+      rankingList.innerHTML = '';  // 初期化
+
+      ranking.forEach(track => {
+        const listItem = document.createElement('li');
+        listItem.innerHTML = `
+          <span class="rank">#${track.rank}</span>
+          
+          <div class="track-info">
+            <div class="track-image">
+              <img src="${track.image_url}" alt="${track.name} album cover">
+            </div>
+            <div>
+              <strong>${track.name}</strong> by ${track.artist} (Popularity: ${track.popularity})
+            </div>
+            
+            <audio controls>
+              <source src="${track.preview_url}" type="audio/mp3">
+              あなたのブラウザはオーディオ要素をサポートしていません。
+            </audio>
+          </div>
+        `;
+        rankingList.appendChild(listItem);
+      });
+    }
+
+    // ページが読み込まれたときにランキングを作成
+    window.onload = createTrackRanking;
+  </script>
+
+</body>
+</html>
